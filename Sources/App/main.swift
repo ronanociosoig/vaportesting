@@ -3,12 +3,9 @@ import VaporPostgreSQL
 
 // import VaporMySQL
 
-let drop = Droplet(
-    preparations: [Acronym.self],
-    providers: [VaporPostgreSQL.Provider.self]
-)
-//try drop.addProvider(VaporPostgreSQL.Provider.self)
-//try drop.addProvider(VaporMySQL.Provider.self)
+let drop = Droplet()
+try drop.addProvider(VaporPostgreSQL.Provider)
+drop.preparations += Acronym.self
 
 drop.get { req in
     return try drop.view.make("welcome", [
@@ -16,20 +13,14 @@ drop.get { req in
     ])
 }
 
-drop.get("version") { request in
-    
-    if let db = drop.database?.driver as? PostgreSQLDriver {
-        let version = try db.raw("SELECT version()")
-        return try JSON(node: version)
-    } else {
-        return "No DB connection"
-    }
-}
+let basicController = BasicController()
+basicController.addRoutes(drop: drop)
 
-drop.get("model") { request in
-    let acronym = Acronym.init(short: "AFK", long: "Away From Keyboard")
-    return try acronym.makeJSON()
-}
+let acronymsController = AcronymsController()
+drop.resource("acronyms", acronymsController)
+
+let controller = TILController()
+controller.addRoutes(drop: drop)
 
 drop.get("test") { request in
     var acronym = Acronym.init(short: "AFK", long: "Away From Keyboard")
